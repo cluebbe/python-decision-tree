@@ -1,12 +1,46 @@
 # Decision Trees with scikit-learn — Step-by-Step Tutorial
 
-A decision tree is a supervised learning algorithm that splits data into branches based on feature values, forming a tree-like structure of decisions.
+## Introduction to Decision Trees
+
+A **decision tree** is a supervised machine learning algorithm that learns to make predictions by repeatedly splitting data into smaller groups based on feature values. The result is a tree-like structure of nested if/else rules that is easy to follow and explain.
+
+### How it works
+
+At each step during training, the algorithm searches for the feature and threshold that best separates the data — for example, *"is petal width ≤ 0.80 cm?"*. Samples that satisfy the condition go left; the rest go right. This process repeats recursively at each resulting node until a stopping condition is met (such as a maximum depth or a minimum number of samples).
+
+The final tree is made up of three types of nodes:
 
 | Component | Role |
 |---|---|
 | Internal node | A feature/threshold test |
-| Branch | The outcome of the test |
+| Branch | The outcome of the test (true or false) |
 | Leaf | A predicted class (classification) or value (regression) |
+
+### How splits are chosen
+
+The algorithm picks the split that maximally reduces **impurity** — a measure of how mixed the classes are at a node. Two common criteria are:
+
+- **Gini impurity** — measures the probability of misclassifying a randomly chosen sample. A pure node (all one class) has Gini = 0.
+- **Entropy (information gain)** — measures the reduction in uncertainty after a split, borrowed from information theory.
+
+Both criteria produce similar trees in practice. Gini is slightly faster to compute and is the scikit-learn default.
+
+### Strengths and weaknesses
+
+| Strengths | Weaknesses |
+|---|---|
+| Highly interpretable — rules can be read and explained | Prone to overfitting without depth constraints |
+| No feature scaling required | High variance — small data changes can alter the tree significantly |
+| Handles both numerical and categorical features | Axis-aligned splits only — struggles with diagonal decision boundaries |
+| Fast to train and predict | Biased toward features with many possible split points |
+
+### Overfitting and regularisation
+
+An unconstrained decision tree will grow until every leaf contains a single sample, perfectly memorising the training data but generalising poorly to new data. This is **overfitting**. The most common way to prevent it is to limit the tree's complexity:
+
+- **`max_depth`** — hard cap on how many levels the tree can have
+- **`min_samples_split`** — require a minimum number of samples before a node can be split
+- **`min_samples_leaf`** — require a minimum number of samples in every leaf
 
 ---
 
@@ -39,8 +73,15 @@ Load the Iris dataset and assign the feature matrix to `X` and the target vector
 
 ```python
 iris = load_iris()
-X = iris.data   # shape: (150, 4)
-y = iris.target # 0=setosa, 1=versicolor, 2=virginica
+
+X = iris.data        # shape: (150, 4) — sepal/petal length and width
+y = iris.target      # 0=setosa, 1=versicolor, 2=virginica
+
+print("=== Dataset Overview ===")
+print(f"Samples:  {X.shape[0]}")
+print(f"Features: {X.shape[1]}  →  {iris.feature_names}")
+print(f"Classes:  {iris.target_names}")
+print(f"Class distribution: {np.bincount(y)}\n")
 ```
 
 The **Iris dataset** contains 150 flower samples across 3 species, each described by 4 features:
@@ -66,10 +107,13 @@ Split the data into training and test sets using an 80/20 ratio. Ensure the spli
 ```python
 X_train, X_test, y_train, y_test = train_test_split(
     X, y,
-    test_size=0.2,
-    random_state=42,
-    stratify=y,
+    test_size=0.2,    # 20% held out for evaluation
+    random_state=42,  # reproducibility
+    stratify=y,       # keep class proportions equal in both splits
 )
+
+print(f"Training samples: {len(X_train)}")
+print(f"Test samples:     {len(X_test)}\n")
 ```
 
 - **test_size=0.2** — 20% of samples (30) are held out for evaluation; 80% (120) are used for training.
@@ -88,8 +132,20 @@ Train a `DecisionTreeClassifier` with a maximum depth of 3 and Gini impurity as 
 <summary>Solution</summary>
 
 ```python
-clf = DecisionTreeClassifier(max_depth=3, criterion="gini", random_state=42)
+# Key hyperparameters:
+#   max_depth     — limits tree depth to prevent overfitting
+#   criterion     — "gini" (impurity) or "entropy" (information gain)
+#   min_samples_split — minimum samples needed to split a node
+
+clf = DecisionTreeClassifier(
+    max_depth=3,
+    criterion="gini",
+    random_state=42,
+)
 clf.fit(X_train, y_train)
+
+print("=== Trained Decision Tree (text) ===")
+print(export_text(clf, feature_names=iris.feature_names))
 ```
 
 Key hyperparameters:
@@ -115,7 +171,11 @@ Generate predictions on the test set. Print the overall accuracy as a percentage
 
 ```python
 y_pred = clf.predict(X_test)
+
 accuracy = accuracy_score(y_test, y_pred)
+print(f"=== Evaluation ===")
+print(f"Accuracy: {accuracy:.2%}\n")
+print("Classification report:")
 print(classification_report(y_test, y_pred, target_names=iris.target_names))
 ```
 
@@ -137,8 +197,14 @@ Extract the feature importances from the trained model and print them ranked fro
 <summary>Solution</summary>
 
 ```python
+# Feature importance = how much each feature reduced impurity across all splits
 importances = clf.feature_importances_
 sorted_idx = np.argsort(importances)[::-1]
+
+print("=== Feature Importances ===")
+for rank, idx in enumerate(sorted_idx, 1):
+    print(f"  {rank}. {iris.feature_names[idx]:<30} {importances[idx]:.4f}")
+print()
 ```
 
 Feature importance measures how much each feature reduced impurity (Gini) across all splits in the tree. Values sum to 1.0. A higher score means the feature was more influential in the model's decisions.
@@ -165,7 +231,19 @@ Do not save figures to disk — display them inline.
 ### 6a: Decision Tree Diagram
 
 ```python
-plot_tree(clf, feature_names=..., class_names=..., filled=True, rounded=True, ax=ax)
+# 6a: The decision tree itself
+fig, ax = plt.subplots(figsize=(14, 6))
+plot_tree(
+    clf,
+    feature_names=iris.feature_names,
+    class_names=iris.target_names,
+    filled=True,        # colour nodes by majority class
+    rounded=True,
+    ax=ax,
+)
+ax.set_title("Decision Tree — Iris Dataset (max_depth=3)")
+fig.tight_layout()
+plt.show()
 ```
 
 Renders the full tree structure. Each node shows:
@@ -177,7 +255,17 @@ Renders the full tree structure. Each node shows:
 ### 6b: Confusion Matrix
 
 ```python
-ConfusionMatrixDisplay.from_predictions(y_test, y_pred, ...)
+# 6b: Confusion matrix
+fig, ax = plt.subplots(figsize=(6, 5))
+ConfusionMatrixDisplay.from_predictions(
+    y_test, y_pred,
+    display_labels=iris.target_names,
+    cmap="Blues",
+    ax=ax,
+)
+ax.set_title("Confusion Matrix")
+fig.tight_layout()
+plt.show()
 ```
 
 A grid showing actual vs. predicted classes. The diagonal contains correct predictions; off-diagonal cells reveal which classes are confused with each other.
@@ -185,6 +273,20 @@ A grid showing actual vs. predicted classes. The diagonal contains correct predi
 ### 6c: Feature Importance Bar Chart
 
 A bar chart ranking features by their importance score, making it easy to see which features the tree relied on most.
+
+```python
+# 6c: Feature importance bar chart
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.bar(
+    range(len(importances)),
+    importances[sorted_idx],
+    tick_label=[iris.feature_names[i] for i in sorted_idx],
+)
+ax.set_ylabel("Importance (Gini)")
+ax.set_title("Feature Importances")
+fig.tight_layout()
+plt.show()
+```
 
 </details>
 
@@ -198,10 +300,27 @@ Train 10 decision trees with `max_depth` values from 1 to 10. Record train and t
 <summary>Solution</summary>
 
 ```python
-for d in range(1, 11):
+print("=== Depth vs Accuracy (train / test) ===")
+depths = range(1, 11)
+train_scores, test_scores = [], []
+
+for d in depths:
     m = DecisionTreeClassifier(max_depth=d, random_state=42)
     m.fit(X_train, y_train)
-    # record train and test accuracy
+    train_scores.append(accuracy_score(y_train, m.predict(X_train)))
+    test_scores.append(accuracy_score(y_test, m.predict(X_test)))
+    print(f"  depth={d:2d}  train={train_scores[-1]:.2%}  test={test_scores[-1]:.2%}")
+
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.plot(depths, train_scores, marker="o", label="Train accuracy")
+ax.plot(depths, test_scores, marker="s", label="Test accuracy")
+ax.set_xlabel("max_depth")
+ax.set_ylabel("Accuracy")
+ax.set_title("Overfitting: Train vs Test Accuracy by Tree Depth")
+ax.legend()
+ax.grid(True, linestyle="--", alpha=0.5)
+fig.tight_layout()
+plt.show()
 ```
 
 This loop trains 10 trees with increasing depth and records both **training** and **test** accuracy.
@@ -224,9 +343,16 @@ Using the trained classifier, predict the class and class probabilities for a ne
 <summary>Solution</summary>
 
 ```python
-sample = np.array([[5.1, 3.5, 1.4, 0.2]])
+sample = np.array([[5.1, 3.5, 1.4, 0.2]])  # a new, unseen flower
 prediction = clf.predict(sample)[0]
 probabilities = clf.predict_proba(sample)[0]
+
+print("\n=== Single Prediction ===")
+print(f"Input features: sepal_length=5.1, sepal_width=3.5, petal_length=1.4, petal_width=0.2")
+print(f"Predicted class: {iris.target_names[prediction]}")
+print("Class probabilities:")
+for cls, prob in zip(iris.target_names, probabilities):
+    print(f"  {cls:<12} {prob:.2%}")
 ```
 
 - `predict` returns the most likely class label.
