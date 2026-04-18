@@ -18,7 +18,7 @@ The final tree is made up of three types of nodes:
 
 ### How splits are chosen
 
-The algorithm picks the split that maximally reduces **impurity** — a measure of how mixed the classes are at a node. Two common criteria are:
+The algorithm picks the split that maximally reduces a splitting criterion. Two common criteria are:
 
 - **Gini impurity** — measures the probability of misclassifying a randomly chosen sample. A pure node (all one class) has Gini = 0.
 - **Entropy (information gain)** — measures the reduction in uncertainty after a split, borrowed from information theory.
@@ -43,6 +43,30 @@ An unconstrained decision tree will grow until every leaf contains a single samp
 - **`min_samples_leaf`** — require a minimum number of samples in every leaf
 
 ---
+
+## Preparation — Environment Setup
+
+Before running any code, set up an isolated Python environment:
+
+```bash
+# 1. Create and enter your project folder
+mkdir decision-tree && cd decision-tree
+
+# 2. Create a virtual environment (run once)
+python3 -m venv venv
+
+# 3. Activate it
+source venv/bin/activate        # macOS / Linux
+venv\Scripts\activate           # Windows
+
+# 4. Install dependencies
+pip install numpy matplotlib scikit-learn
+
+# 5. When you're done, deactivate
+deactivate
+```
+
+> **Why a virtual environment?** It keeps the packages for this project separate from your system Python and other projects, avoiding version conflicts.
 
 ## Preparation — Imports
 
@@ -126,7 +150,7 @@ print(f"Test samples:     {len(X_test)}\n")
 
 ## Step 3 — Train a Decision Tree
 
-Train a `DecisionTreeClassifier` with a maximum depth of 3 and Gini impurity as the splitting criterion. Use a fixed random state for reproducibility, then print a text representation of the learned tree rules labelled with feature names.
+Train a `DecisionTreeClassifier` with a maximum depth of 3 and Gini impurity as the splitting criterion. Use a fixed random state for reproducibility, then use export_text to print a text representation of the learned tree rules labelled with feature names.
 
 <details>
 <summary>Solution</summary>
@@ -181,8 +205,8 @@ print(classification_report(y_test, y_pred, target_names=iris.target_names))
 
 - **accuracy_score** — the fraction of test samples classified correctly.
 - **classification_report** — per-class breakdown of precision, recall, and F1-score:
-  - **Precision** — of all samples predicted as class X, how many actually were X?
-  - **Recall** — of all actual class X samples, how many were correctly identified?
+  - **Precision** — ratio of all samples predicted as class X, how many actually were X?
+  - **Recall** — ratio of all actual class X samples, how many were correctly identified?
   - **F1-score** — harmonic mean of precision and recall; a single balanced metric.
 
 </details>
