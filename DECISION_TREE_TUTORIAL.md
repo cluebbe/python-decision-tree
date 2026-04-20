@@ -46,7 +46,17 @@ An unconstrained decision tree will grow until every leaf contains a single samp
 
 ## Preparation — Environment Setup
 
-Before running any code, set up an isolated Python environment:
+Before running any code, install Python and set up an isolated environment.
+
+**Install Python 3.9 or newer** from [python.org](https://www.python.org/downloads/). Verify it is available in your terminal:
+
+```bash
+python3 --version
+```
+
+> **Windows users:** during installation, tick **"Add Python to PATH"** so the `python` and `pip` commands are available in your terminal.
+
+Then set up an isolated environment:
 
 ```bash
 # 1. Create and enter your project folder

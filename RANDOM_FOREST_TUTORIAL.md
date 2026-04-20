@@ -16,14 +16,12 @@ Prediction is made by **majority vote** (classification) or **averaging** (regre
 
 ### Why ensembles help
 
-A single decision tree has high variance — small changes in the training data can produce a very different tree. By averaging many diverse trees, the forest reduces variance while keeping bias low. This is known as the **bias–variance tradeoff**:
+A single decision tree has high variance — small changes in the training data can produce a very different tree. By averaging many diverse trees, the forest reduces variance while keeping bias low. This is known as the **bias–variance tradeoff**.
 
-```
-Ensemble error ≈ avg_tree_bias² + avg_tree_variance / n_trees
-                + pairwise_correlation_term
-```
+Two levers control the tradeoff:
 
-Increasing `n_estimators` drives the variance term toward zero. Reducing feature subset size (lower `max_features`) reduces the correlation term.
+- **More trees (`n_estimators`)** — averaging more independent predictions cancels out individual tree errors, reducing variance. Gains plateau after a point, so there is no need to go beyond a few hundred trees.
+- **Random feature subsets (`max_features`)** — forcing each tree to consider only a random subset of features at every split ensures the trees make different mistakes. If all trees used the same features they would be too similar and their errors would not cancel out.
 
 ### Key hyperparameters
 
@@ -46,6 +44,40 @@ Increasing `n_estimators` drives the variance term toward zero. Reducing feature
 | Feature importance | One tree's view | Averaged across all trees |
 
 ---
+
+## Preparation — Environment Setup
+
+Before running any code, install Python and set up an isolated environment.
+
+**Install Python 3.9 or newer** from [python.org](https://www.python.org/downloads/). Verify it is available in your terminal:
+
+```bash
+python3 --version
+```
+
+> **Windows users:** during installation, tick **"Add Python to PATH"** so the `python` and `pip` commands are available in your terminal.
+
+Then set up an isolated environment:
+
+```bash
+# 1. Create and enter your project folder
+mkdir random-forest && cd random-forest
+
+# 2. Create a virtual environment (run once)
+python3 -m venv venv
+
+# 3. Activate it
+source venv/bin/activate        # macOS / Linux
+venv\Scripts\activate           # Windows
+
+# 4. Install dependencies
+pip install numpy matplotlib scikit-learn
+
+# 5. When you're done, deactivate
+deactivate
+```
+
+> **Why a virtual environment?** It keeps the packages for this project separate from your system Python and other projects, avoiding version conflicts.
 
 ## Preparation — Imports
 
@@ -130,6 +162,15 @@ print(f"Test samples:     {len(X_test)}\n")
 
 ## Step 3 — Train a Random Forest
 
+### Out-of-Bag (OOB) score
+
+Each tree is trained on a bootstrap sample — a random draw *with replacement* of ~63% of the training data. The remaining ~37% of samples that were not drawn are called **out-of-bag** for that tree. For each training sample, predictions are collected only from the trees that did not see it during training, and those predictions are majority-voted to produce an OOB estimate.
+
+The OOB score is the accuracy of these estimates across all training samples. It is essentially a free cross-validation — no separate validation set is needed and no extra training runs are required, because the left-out samples arise naturally from bootstrap sampling. In practice the OOB score closely tracks true test accuracy, making it useful for quickly comparing hyperparameters during development.
+
+Note: OOB scoring requires enough trees so that every training sample is left out by at least one tree. With very few trees some samples may never be left out, making the estimate unreliable.
+
+### Task: Train a Random Forest
 Train a `RandomForestClassifier` with 100 trees, a max depth of 3, and OOB scoring enabled. Use `random_state=42`. Print the OOB score alongside the training accuracy.
 
 <details>
@@ -208,7 +249,7 @@ sorted_idx = np.argsort(importances)[::-1]
 
 print("=== Feature Importances ===")
 for rank, idx in enumerate(sorted_idx, 1):
-    print(f"  {rank:2}. {bc.feature_names[idx]:<35} {importances[idx]:.4f} ± {std[idx]:.4f}")
+    print(f"  {rank:2}. {bc.feature_names[idx]:<35} importance={importances[idx]:.4f}  std={std[idx]:.4f}")
 print()
 ```
 

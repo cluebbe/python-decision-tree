@@ -313,7 +313,7 @@ print(classification_report(y_test, y_pred, target_names=bc.target_names))
 #
 # print("=== Feature Importances ===")
 # for rank, idx in enumerate(sorted_idx, 1):
-#     print(f"  {rank:2}. {bc.feature_names[idx]:<35} {importances[idx]:.4f} ± {std[idx]:.4f}")
+#     print(f"  {rank:2}. {bc.feature_names[idx]:<35} importance={importances[idx]:.4f}  std={std[idx]:.4f}")
 # print()
 #
 # Feature importance in a random forest is the mean decrease in Gini impurity
@@ -334,7 +334,7 @@ sorted_idx = np.argsort(importances)[::-1]
 
 print("=== Feature Importances ===")
 for rank, idx in enumerate(sorted_idx, 1):
-    print(f"  {rank:2}. {bc.feature_names[idx]:<35} {importances[idx]:.4f} ± {std[idx]:.4f}")
+    print(f"  {rank:2}. {bc.feature_names[idx]:<35} importance={importances[idx]:.4f}  std={std[idx]:.4f}")
 print()
 
 # =============================================================================
