@@ -36,7 +36,7 @@ y = iris.target      # 0=setosa, 1=versicolor, 2=virginica
 
 print("=== Dataset Overview ===")
 print(f"Samples:  {X.shape[0]}")
-print(f"Features: {X.shape[1]}  →  {iris.feature_names}")
+print(f"Features: {X.shape[1]}  ->  {iris.feature_names}")
 print(f"Classes:  {iris.target_names}")
 print(f"Class distribution: {np.bincount(y)}\n")
 
